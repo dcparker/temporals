@@ -1,0 +1,26 @@
+This library file purposes to follow Martin Fowler's TimePoint pattern (http://martinfowler.com/ap2/timePoint.html) in Ruby as closely as possible, in the simplest way possible. It is most certainly lacking some obvious things (like timezone support) and is still relatively simple in its expression parsing, but it's surprisingly powerful for its size.
+
+TimePoint works to follow the true spirit of the TimePoint pattern -- the idea that every expression of time is in fact a block of time, and we mean these expressions to be to differing precisions. For example, if I say "Today", I simply mean anytime within today. However, if I say "2:05pm Today", I mean any second within that very specific minute. But if I say "2:00pm Fridays" I really mean every Friday, and that expression is precise to the day-of-week and to the hour and minute, but not to the second, the week, the month, or the year.
+
+The main usage of TimePoint, as it currently has been built for, is TimePoint.parse and TimePoint#include?. Here are several examples:
+
+Single-point expressions:
+	every_tuesday = TimePoint.parse('Tuesday')
+	feb24_every_year = TimePoint.parse("February 24th")
+	feb24_2001_all_day = TimePoint.parse("24 February 2001")
+	jan9_2009_and_every_thursday_in_2009 = TimePoint.parse("9 January 2009 and Thursday 2009")
+	2pm_every_friday_in_jan_09_and_every_thurs_in_09 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
+
+Multiple-points can be expressed using 'and':
+	TimePoint.parse('Tuesday and Thursday') == TimePointSet.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5))
+
+Certain abbreviations have been defined:
+	TimePoint.parse('T&Th Feb') == TimePoint.parse('Tuesday and Thursday in February')
+
+
+
+From that most complex one above, see how TimePoint#include? works:
+  2pm_every_friday_in_jan_09_and_every_thurs_in_09.include?(Time.parse('2009-02-05 19:00:00')) => true
+  2pm_every_friday_in_jan_09_and_every_thurs_in_09.include?(Time.parse('2009-01-09 14:31:00')) => true
+  2pm_every_friday_in_jan_09_and_every_thurs_in_09.include?(Time.parse('February 5, 2010')) => false
+  2pm_every_friday_in_jan_09_and_every_thurs_in_09.include?(Time.parse('January 16, 2007')) => false
