@@ -163,7 +163,7 @@ class TimePointSet
 
   def eql?(other)
     if other.is_a?(TimePointSet)
-      set.length == other.length && set.length.times {|i| set[i].eql? other[i]}
+      set.length == other.length && set.length.times { |i| return false unless set[i].eql? other[i] }
     else
       # what else can we compare to?
       raise "Comparison of TimePointSet with something different (#{other.class.name})."
