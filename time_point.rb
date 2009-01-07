@@ -18,39 +18,28 @@ end
 # TimePointRange, where there is a begin-TimePoint and an end-TimePoint. "Tuesdays and Thursdays" is also not a single TimePoint, but a
 # TimePointSet. A TimePointSet is a set of multiple, unrelated TimePoint's or TimePointRange's.
 class TimePoint
-  Second = :second
-  Minute = :minute
-  Hour = :hour
-  Day = :day
-  WDay = :wday
-  Week = :week
-  Month = :month
-  Year = :year
+  PRECISION_ORDER = [:second, :minute, :hour, :wday, :week, :month, :year]
+  PRECISION_SCALE_ORDER = [:date, :secondly, :minutely, :hourly, :daily, :weekly, :monthly, :yearly]
 
-  # Cycle precision
-  Secondly = :secondly
-  Minutely = :minutely
-  Hourly = :hourly
-  Daily = :daily
-  Weekly = :weekly
-  Monthly = :monthly
-  Yearly = :yearly
-  # Date precision
-  Date = :date
-
-  PRECISION_ORDER = [Second, Minute, Hour, WDay, Week, Month, Year]
-  PRECISION_SCALE_ORDER = [Date, Secondly, Minutely, Hourly, Daily, Weekly, Monthly, Yearly]
-
-  DAYS = [nil, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   WEEKS = [nil, 'First', 'Second', 'Third', 'Fourth', 'Fifth']
   MONTHS = [nil, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
   TRANSLATIONS = {
+    'S' => 'Sunday',
     'M' => 'Monday',
     'T' => 'Tuesday',
     'W' => 'Wednesday',
     'Th' => 'Thursday',
     'F' => 'Friday',
+    'Sa' => 'Saturday',
+    'Sundays' => 'Sunday',
+    'Mondays' => 'Monday',
+    'Tuesdays' => 'Tuesday',
+    'Wednesdays' => 'Wednesday',
+    'Thursdays' => 'Thursday',
+    'Fridays' => 'Friday',
+    'Saturdays' => 'Saturday',
     '1o' => 'First',
     '2o' => 'Second',
     '3o' => 'Third',
@@ -75,15 +64,10 @@ class TimePoint
   # TODO: Currently you can blindly set these, but beware because the wday might not match the day/month/year on the real calendar!
 
   def self.parse(expression)
-    # Tuesday => Weekly, WDay precision
-    # This Tuesday => Date, WDay precision
-    # 2:00 => Daily, Minute precision
-    # Tuesday 2:00 => Weekly, Minute precision
-    # This Tuesday 2pm => Date, Hour precision
     tp = allocate
 
     # Highly Magical PARSE Action!!
-    # or, not yet. :/
+    # or, maybe not quite. :/
     words = expression.downcase.gsub(/&/,' & ').split(/\s+/).map {|w| TRANSLATIONS[w] || w}
     
     current = tp
@@ -195,78 +179,5 @@ class TimePointSet
     else
       super
     end
-  end
-end
-
-require 'rubygems'
-require 'spec'
-
-describe Time do
-  it "should report the correct week number" do
-    Time.parse('Jan 7, 2009').week.should eql(1)
-    Time.parse('Jan 17, 2009').week.should eql(2)
-    Time.parse('Jan 18, 2009').week.should eql(3)
-    Time.parse('Jan 25, 2009').week.should eql(4)
-    Time.parse('Jan 31, 2009').week.should eql(4)
-  end
-end
-
-describe TimePoint do
-  it "should parse a simple day of the week" do
-    tuesday = TimePoint.parse('Tuesday')
-    tuesday.should include(Time.parse('Tues, Jan 13, 2009'))
-    tuesday.should_not include(Time.parse('Wed, Jan 14, 2009'))
-    tuesday.should include(Time.parse('Tues, Feb 3, 2009'))
-    tuesday.should_not include(Time.parse('Wed, Feb 2, 2009'))
-  end
-
-  it "should parse more complex TimePoints (A)" do
-    tp = TimePoint.parse("February 24th")
-    tp.should include(Time.parse('February 24, 2006'))
-    tp.should include(Time.parse('February 24, 2010'))
-    tp.should_not include(Time.parse('February 23, 2007'))
-  end
-
-  it "should parse more complex TimePoints (B)" do
-    tp = TimePoint.parse("24 February 2001")
-    tp.should include(Time.parse('February 24, 2001'))
-    tp.should include(Time.parse('2001-02-24 16:00:01'))
-    tp.should_not include(Time.parse('2001-02-23 16:00:01'))
-    tp.should_not include(Time.parse('2001-03-24 08:25:43'))
-    tp.should_not include(Time.parse('2002-02-24 10:30:01'))
-  end
-
-  it "should parse more complex TimePoints (C)" do
-    tp = TimePoint.parse("9 January 2009 and Thursday 2009")
-    tp.should include(Time.parse('February 5, 2009'))
-    tp.should include(Time.parse('January 9, 2009'))
-    tp.should_not include(Time.parse('February 5, 2010'))
-    tp.should_not include(Time.parse('January 9, 2007'))
-  end
-
-  it "should parse more complex TimePoints (D)" do
-    tp = TimePoint.parse("Friday 2pm January 2009 and Thursday 2009")
-    tp.should include(Time.parse('2009-02-05 19:00:00'))
-    tp.should include(Time.parse('2009-01-09 14:31:00'))
-    tp.should_not include(Time.parse('February 5, 2010'))
-    tp.should_not include(Time.parse('January 16, 2007'))
-  end
-
-  it "should parse a TimePointSet" do
-    TimePoint.parse('Tuesday and Thursday').should eql(TimePointSet.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5)))
-  end
-
-  it "should parse a TimePointSet" do
-    TimePoint.parse('T&Th February').should eql(TimePoint.parse('Tuesday and Thursday in Feb'))
-  end
-end
-
-describe TimePointSet do
-  it "should deal with a simple set of TimePoints correctly" do
-    tue_thur = TimePointSet.new(TimePoint.parse('Tuesday'), TimePoint.parse('Thursday'))
-    tue_thur.should_not include(Time.parse('Tues, Jan 5, 2009'))
-    tue_thur.should include(Time.parse('Wed, Jan 6, 2009'))
-    tue_thur.should_not include(Time.parse('Thurs, Jan 7, 2009'))
-    tue_thur.should include(Time.parse('Fri, Jan 8, 2009'))
   end
 end
