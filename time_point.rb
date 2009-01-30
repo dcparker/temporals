@@ -16,14 +16,14 @@ end
 # the day-of-week. "This Tuesday 2pm" is a TimePoint that cares about the actual date and the hour. Anytime within 2 o'clock this Tuesday
 # would match. However, "2-3pm" is not a single TimePoint because it covers more than one unit (hours) of time. "2-3pm" would be a
 # TimePointRange, where there is a begin-TimePoint and an end-TimePoint. "Tuesdays and Thursdays" is also not a single TimePoint, but a
-# TimePointSet. A TimePointSet is a set of multiple, unrelated TimePoint's or TimePointRange's.
+# TimePointUnion. A TimePointUnion is a set of multiple, unrelated TimePoint's or TimePointRange's.
 class TimePoint
-  PRECISION_ORDER = [:second, :minute, :hour, :wday, :week, :month, :year]
-  PRECISION_SCALE_ORDER = [:date, :secondly, :minutely, :hourly, :daily, :weekly, :monthly, :yearly]
+  PRECISION_ORDER = [:second, :minute, :hour, :wday, :week, :month, :year] unless defined?(PRECISION_ORDER)
+  PRECISION_SCALE_ORDER = [:date, :secondly, :minutely, :hourly, :daily, :weekly, :monthly, :yearly] unless defined?(PRECISION_SCALE_ORDER)
 
-  DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  WEEKS = [nil, 'First', 'Second', 'Third', 'Fourth', 'Fifth']
-  MONTHS = [nil, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] unless defined?(DAYS)
+  WEEKS = [nil, 'First', 'Second', 'Third', 'Fourth', 'Fifth'] unless defined?(WEEKS)
+  MONTHS = [nil, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] unless defined?(MONTHS)
 
   TRANSLATIONS = {
     'S' => 'Sunday',
@@ -40,11 +40,11 @@ class TimePoint
     'Thursdays' => 'Thursday',
     'Fridays' => 'Friday',
     'Saturdays' => 'Saturday',
-    '1o' => 'First',
-    '2o' => 'Second',
-    '3o' => 'Third',
-    '4o' => 'Fourth',
-    '5o' => 'Fifth',
+    'wk1' => 'First',
+    'wk2' => 'Second',
+    'wk3' => 'Third',
+    'wk4' => 'Fourth',
+    'wk5' => 'Fifth',
     'Jan' => 'January',
     'Feb' => 'February',
     'Mar' => 'March',
@@ -56,8 +56,16 @@ class TimePoint
     'Oct' => 'October',
     'Nov' => 'November',
     'Dec' => 'December',
-    '&' => 'And'
-  }
+    '&' => 'And',
+    '|' => 'Or',
+    '-' => 'Diff'
+  } unless defined?(TRANSLATIONS)
+  # Take the shortest of abbreviations for each value.
+  REVERSE_TRANSLATIONS = TRANSLATIONS.keys.inject({}) do |h,k|
+    v = TRANSLATIONS[k]
+    h[v] = k unless h.has_key?(v) && h[v].length < k.length
+    h
+  end unless defined?(REVERSE_TRANSLATIONS)
 
   # These allow a TimePoint to act like a time object, but we don't have to have all of them defined!
   attr_accessor :second, :minute, :hour, :day, :wday, :week, :month, :year
@@ -68,7 +76,8 @@ class TimePoint
 
     # Highly Magical PARSE Action!!
     # or, maybe not quite. :/
-    words = expression.downcase.gsub(/&/,' & ').split(/\s+/).map {|w| TRANSLATIONS[w] || w}
+    words = expression.gsub(/([\&\|\-])/,' \1 ').split(/\s+/).map {|w| (TRANSLATIONS[w] || w).downcase}
+    puts "Expanded: #{words.join(' ')}"
     
     current = tp
     until words.empty?
@@ -85,7 +94,11 @@ class TimePoint
         current.hour = $3 == 'pm' ? $1.to_i + 12 : $1.to_i
         current.minute = $2.to_i
       when word == 'And'
-        tp = TimePointSet.new unless tp.is_a?(TimePointSet)
+        tp = TimePointUnion.new unless tp.is_a?(TimePointUnion)
+        tp << current
+        current = allocate
+      when word == 'Or'
+        tp = TimePointIntersection.new unless tp.is_a?(TimePointIntersection)
         tp << current
         current = allocate
       when WEEKS.include?(word)
@@ -132,6 +145,16 @@ class TimePoint
       raise "Comparison of TimePoint with something different (#{other.class.name})."
     end
   end
+
+  def to_s
+    times = [hour, minute, second].compact
+    time = times.empty? ? nil : times.join(':')
+    warn super.sub(/>/,' '+instance_variables.collect {|iv| "#{iv}=#{instance_variable_get(iv).inspect}"}.join(' ')+'>')
+    weekday = wday ? REVERSE_TRANSLATIONS[DAYS[wday]] : nil
+    weeknum = week ? REVERSE_TRANSLATIONS[WEEKS[week]] : nil
+    dmonth = month ? REVERSE_TRANSLATIONS[MONTHS[month]] : nil
+    [time, weekday, day, weeknum, dmonth, year].compact.join(' ')
+  end
 end
 
 # Has a begin-TimePoint and an end-TimePoint, and they share the same precision.
@@ -147,27 +170,27 @@ class TimePointRange
   end
 end
 
-# Just a Set of TimePoint's and TimePointRange's.
 class TimePointSet
   def set
     @set ||= []
   end
 
   def initialize(*args)
-    @set = args.select {|e| e.is_a?(TimePoint) || e.is_a?(TimePointRange)}
-  end
-
-  def include?(other)
-    set.any? {|tp| tp.include?(other)}
+    raise RuntimeError if self.class == TimePointSet
+    @set = args.select {|e| e.is_a?(TimePoint) || e.is_a?(TimePointRange) || e.is_a?(TimePointSet)}
   end
 
   def eql?(other)
-    if other.is_a?(TimePointSet)
+    if other.is_a?(TimePointUnion)
       set.length == other.length && set.length.times { |i| return false unless set[i].eql? other[i] }
     else
       # what else can we compare to?
-      raise "Comparison of TimePointSet with something different (#{other.class.name})."
+      raise "Comparison of TimePointUnion with something different (#{other.class.name})."
     end
+  end
+
+  def to_s
+    set.collect {|tp| tp.to_s}.join(connector)
   end
 
   private
@@ -180,4 +203,36 @@ class TimePointSet
       super
     end
   end
+end
+
+class TimePointUnion < TimePointSet
+  def include?(other)
+    set.any? {|tp| tp.include?(other)}
+  end
+
+  define_method(:connector) {'&'}
+  private :connector
+end
+
+class TimePointIntersection < TimePointSet
+  def include?(other)
+    set.all? {|tp| tp.include?(other)}
+  end
+
+  define_method(:connector) {'|'}
+  private :connector
+end
+
+class TimePointComplement < TimePointSet
+  def initialize(tp1, tp2)
+    raise ArgumentError unless (tp1.is_a?(TimePoint) || tp1.is_a?(TimePointRange) || tp1.is_a?(TimePointSet)) && (tp2.is_a?(TimePoint) || tp2.is_a?(TimePointRange) || tp2.is_a?(TimePointSet))
+    @set = [tp1, tp2]
+  end
+
+  def include?(other)
+    set[0].include?(other) && !set[1].include?(other)
+  end
+
+  define_method(:connector) {'-'}
+  private :connector
 end

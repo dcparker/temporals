@@ -53,8 +53,8 @@ describe TimePoint do
     tp.should_not include(Time.parse('January 16, 2007'))
   end
 
-  it "should parse a TimePointSet" do
-    TimePoint.parse('Tuesday and Thursday').should eql(TimePointSet.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5)))
+  it "should parse a TimePointIntersection" do
+    TimePoint.parse('Tuesday and Thursday').should eql(TimePointIntersection.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5)))
   end
 
   it "should translate and expand before parsing" do
@@ -62,9 +62,9 @@ describe TimePoint do
   end
 end
 
-describe TimePointSet do
+describe TimePointIntersection do
   it "should deal with a simple set of TimePoints correctly" do
-    tue_thur = TimePointSet.new(TimePoint.parse('Tuesday'), TimePoint.parse('Thursday'))
+    tue_thur = TimePointIntersection.new(TimePoint.parse('Tuesday'), TimePoint.parse('Thursday'))
     tue_thur.should_not include(Time.parse('Tues, Jan 5, 2009'))
     tue_thur.should include(Time.parse('Wed, Jan 6, 2009'))
     tue_thur.should_not include(Time.parse('Thurs, Jan 7, 2009'))

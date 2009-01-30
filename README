@@ -12,7 +12,7 @@ Single-point expressions:
 	2pm_every_friday_in_jan_09_and_every_thurs_in_09 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
 
 Multiple-points can be expressed using 'and':
-	TimePoint.parse('Tuesday and Thursday') == TimePointSet.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5))
+	TimePoint.parse('Tuesday and Thursday') == TimePointIntersection.new(TimePoint.new(:wday => 3), TimePoint.new(:wday => 5))
 
 Certain abbreviations have been defined:
 	TimePoint.parse('T&Th Feb') == TimePoint.parse('Tuesday and Thursday in February')
