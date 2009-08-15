@@ -1,6 +1,3 @@
-# TODO: finish common patterns
-
-
 require 'time'
 
 class Array
@@ -73,20 +70,21 @@ class TimePoint
     }
   end
 
+  # These are in a specific order
   CommonPatterns = [
-    'ord union ord',
     'ord range ord',
-    'month ord',
+    'ord union ord',
+    'wday range wday',
     'wday union wday',
-    'wday range wday'
+    'month ord'
   ]
   CommonPatternActions = {
-    'ord union ord' => lambda {|words,i|
-      words[i][:ord] = ArrayOfRanges.new(words[i][:ord], words[i+2][:ord])
-      words.slice!(i+1,2)
-    },
     'ord range ord' => lambda {|words,i|
       words[i][:ord] = (words[i][:ord].to_i..words[i+2][:ord].to_i)
+      words.slice!(i+1,2)
+    },
+    'ord union ord' => lambda {|words,i|
+      words[i][:ord] = ArrayOfRanges.new(words[i][:ord], words[i+2][:ord])
       words.slice!(i+1,2)
     },
     'month ord' => lambda {|words,i|
@@ -95,10 +93,12 @@ class TimePoint
       words.slice!(i+1,1)
     },
     'wday union wday' => lambda {|words,i|
-      
+      words[i][:wday] = ArrayOfRanges.new(words[i][:wday], words[i+2][:wday])
+      words.slice!(i+1,2)
     },
     'wday range wday' => lambda {|words,i|
-      
+      words[i][:wday] = (words[i][:wday].to_i..words[i+2][:wday].to_i)
+      words.slice!(i+1,2)
     }
   }
 
@@ -157,6 +157,9 @@ class TimePoint
       
       puts analyzed_expression.inspect
       puts analyzed_expression.collect_types.inspect
+      
+      # What remains should be sections of distinct time-points and boolean logic
+      # 4. Parse time-points and boolean logic
       
     end
   end
