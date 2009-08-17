@@ -76,7 +76,9 @@ class TimePoint
     'ord union ord',
     'wday range wday',
     'wday union wday',
-    'month ord'
+    'month ord',
+    'ord wday',
+    'month_ord timerange'
   ]
   CommonPatternActions = {
     'ord range ord' => lambda {|words,i|
@@ -87,18 +89,32 @@ class TimePoint
       words[i][:ord] = ArrayOfRanges.new(words[i][:ord], words[i+2][:ord])
       words.slice!(i+1,2)
     },
-    'month ord' => lambda {|words,i|
-      words[i][:type] = 'month_ord'
-      words[i][:ord] = words[i+1][:ord]
-      words.slice!(i+1,1)
+    'wday range wday' => lambda {|words,i|
+      words[i][:wday] = (words[i][:wday].to_i..words[i+2][:wday].to_i)
+      words.slice!(i+1,2)
     },
     'wday union wday' => lambda {|words,i|
       words[i][:wday] = ArrayOfRanges.new(words[i][:wday], words[i+2][:wday])
       words.slice!(i+1,2)
     },
-    'wday range wday' => lambda {|words,i|
-      words[i][:wday] = (words[i][:wday].to_i..words[i+2][:wday].to_i)
-      words.slice!(i+1,2)
+    'month ord' => lambda {|words,i|
+      words[i][:type] = 'month_ord'
+      words[i][:ord] = words[i+1][:ord]
+      words.slice!(i+1,1)
+    },
+    'ord wday' => lambda {|words,i|
+      words[i][:type] = 'ord_wday'
+      words[i][:wday] = words[i+1][:wday]
+      words.slice!(i+1,1)
+    },
+    'month_ord timerange' => lambda {|words,i|
+      words[i][:type] = 'month_ord_timerange'
+      words[i][:timerange] = words[i+1][:timerange]
+      words.slice!(i+1,1)
+    },
+    'wday_ord month union month' => lambda {|words,i|
+      words[i][:month] = ArrayOfRanges.new(words[i+1][:month], words[i+3][:month])
+      words.slice!(i+2,2)
     }
   }
 
@@ -150,7 +166,7 @@ class TimePoint
       puts analyzed_expression.collect_types.inspect
 
       CommonPatterns.each do |pattern|
-        if i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
+        while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
           CommonPatternActions[pattern].call(analyzed_expression,i)
         end
       end
