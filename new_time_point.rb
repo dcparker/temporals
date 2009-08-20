@@ -1,3 +1,4 @@
+require 'date'
 require 'time'
 
 class Array
@@ -10,6 +11,51 @@ class Array
       return i if self[i...(i+sequence.length)] == sequence
     end
   end
+
+  def include_value?(v)
+    any? do |iv|
+      case iv
+      when Range || Array
+        v.to_i.in?(iv)
+      else
+        if iv.to_s =~ /^\d+$/ && v.to_s =~ /^\d+$/
+          iv.to_i == v.to_i
+        else
+          iv.to_s == v.to_s
+        end
+      end
+    end
+  end
+end
+
+class Range
+  alias :include_value? :include?
+end
+
+class Object
+  def value_in?(*arg)
+    arg = arg[0] if arg.length == 1 && arg[0].respond_to?(:include_value?)
+    arg.include_value?(self)
+  end
+  def in?(*arg)
+    arg = arg[0] if arg.length == 1 && arg[0].respond_to?(:include?)
+    arg.include?(self)
+  end
+  def my_methods
+    methods.sort - Object.methods
+  end
+end
+
+module WdayOrd
+  def wday_ord
+    (day.to_f / 7).ceil
+  end
+end
+class DateTime
+  include WdayOrd
+end
+class Time
+  include WdayOrd
 end
 
 class TimePoint
@@ -78,7 +124,11 @@ class TimePoint
     'wday union wday',
     'month ord',
     'ord wday',
-    'month_ord timerange'
+    'month_ord timerange',
+    'month union month',
+    'month range month',
+    'ord_wday month',
+    'ord_wday_month timerange'
   ]
   CommonPatternActions = {
     'ord range ord' => lambda {|words,i|
@@ -109,19 +159,46 @@ class TimePoint
     },
     'month_ord timerange' => lambda {|words,i|
       words[i][:type] = 'month_ord_timerange'
-      words[i][:timerange] = words[i+1][:timerange]
+      words[i][:start_time] = words[i+1][:start_time]
+      words[i][:end_time] = words[i+1][:end_time]
       words.slice!(i+1,1)
     },
-    'wday_ord month union month' => lambda {|words,i|
-      words[i][:month] = ArrayOfRanges.new(words[i+1][:month], words[i+3][:month])
-      words.slice!(i+2,2)
+    'month union month' => lambda {|words,i|
+      words[i][:month] = ArrayOfRanges.new(words[i][:month], words[i+2][:month])
+      words.slice!(i+1,2)
+    },
+    'month range month' => lambda {|words,i|
+      
+    },
+    'ord_wday month' => lambda {|words,i|
+      words[i][:type] = 'ord_wday_month'
+      words[i][:month] = words[i+1][:month]
+      words.slice!(i+1,1)
+    },
+    'ord_wday_month timerange' => lambda {|words,i|
+      words[i][:type] = 'ord_wday_month_timerange'
+      words[i][:start_time] = words[i+1][:start_time]
+      words[i][:end_time] = words[i+1][:end_time]
+      words.slice!(i+1,1)
+    }
+  }
+
+  BooleanPatterns = [
+    'union'
+  ]
+
+  BooleanPatternActions = {
+    'union' => lambda {|words,i|
+      words[i-1] = TimePoint::Union.new(words[i-1], words[i+1])
+      words.slice!(i,2)
+      # puts words.inspect
     }
   }
 
   TimeRegexp = '\d{1,2}(?::\d{1,2})?(?:am|pm)'
   WordTypes = {
     :ord => /^(\d+)(?:st|nd|rd|th)?$/i,
-    :wday => /^#{WDay.order.join('|')}$/i,
+    :wday => /^(#{WDay.order.join('|')})s$/i,
     :month => /^#{Month.order.join('|')}$/i,
     :union => /^(?:and)$/i,
     :range => /^(?:-|to|through)$/,
@@ -138,13 +215,13 @@ class TimePoint
 
       # 2. Analyze the expression
       words = expression.split(/\s+/)
-      puts words.inspect
+      # puts words.inspect
       analyzed_expression = words.inject([]) do |a,word|
         a << case word
         when WordTypes[:ord]
           {:type => 'ord', :ord => $1}
         when WordTypes[:wday]
-          {:type => 'wday', :wday => word}
+          {:type => 'wday', :wday => $1}
         when WordTypes[:month]
           {:type => 'month', :month => word}
         when WordTypes[:union]
@@ -162,8 +239,8 @@ class TimePoint
       end
 
       # 3. Combine common patterns
-      puts analyzed_expression.inspect
-      puts analyzed_expression.collect_types.inspect
+      # puts analyzed_expression.inspect
+      # puts analyzed_expression.collect_types.inspect
 
       CommonPatterns.each do |pattern|
         while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
@@ -171,12 +248,134 @@ class TimePoint
         end
       end
       
-      puts analyzed_expression.inspect
-      puts analyzed_expression.collect_types.inspect
-      
-      # What remains should be sections of distinct time-points and boolean logic
-      # 4. Parse time-points and boolean logic
-      
+      # puts analyzed_expression.inspect
+      # puts analyzed_expression.collect_types.inspect
+
+      # What remains should be simply sections of boolean logic
+      # 4. Parse boolean logic
+      analyzed_expression.each_index do |i|
+        analyzed_expression[i] = TimePoint.new(analyzed_expression[i]) unless ['union', 'range'].include? analyzed_expression[i][:type]
+      end
+
+      BooleanPatterns.each do |pattern|
+        while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
+          BooleanPatternActions[pattern].call(analyzed_expression,i)
+          break if analyzed_expression.length == 1
+        end
+      end
+
+      return analyzed_expression[0]
+    end
+  end
+
+  def initialize(options)
+    options.each do |key,value|
+      instance_variable_set(:"@#{key}", value)
+    end
+  end
+
+  def [](key)
+    instance_variable_get(:"@#{key}")
+  end
+
+  def start_pm?
+    if @start_time =~ /(am|pm)$/ || @end_time =~ /(am|pm)$/
+      $1 == 'pm'
+    else
+      nil
+    end
+  end
+
+  def include?(datetime)
+    return false unless occurs_on_day?(datetime)
+    if @type =~ /timerange/
+      test_date = datetime.strftime("%Y-%m-%d")
+      test_start_time = Time.parse("#{test_date} #{@start_time}#{start_pm? ? 'pm' : 'am'}")
+      test_end_time = Time.parse("#{test_date} #{@end_time}")
+      # puts "TimeRange: date:#{test_date} test_start:#{test_start_time} test_end:#{test_end_time} <=> #{datetime}"
+      return false unless datetime.between?(test_start_time, test_end_time)
+    end
+    return true
+  end
+
+  def occurs_on_day?(datetime)
+    # puts "#{datetime} IN? #{inspect}"
+    # puts "Correct month? #{Month.order[datetime.month-1].inspect}==#{@month.inspect} : #{Month.order[datetime.month-1].value_in?(@month)}" if @type =~ /month/
+    return false if @type =~ /month/ && !Month.order[datetime.month-1].value_in?(@month)
+    # puts "Type: #{@type}"
+    case
+    when @type == 'ord_wday_month_timerange'
+      # puts "Weekday: #{WDay.order[datetime.wday].inspect} in? #{@wday.inspect} == #{WDay.order[datetime.wday].value_in?(@wday)}"
+      return false unless WDay.order[datetime.wday].value_in?(@wday)
+      # puts "WeekdayOrd: #{datetime.wday_ord} in? #{@ord.inspect} == #{datetime.wday_ord.value_in?(@ord)}"
+      return false unless datetime.wday_ord.value_in?(@ord)
+    when @type == 'month_ord_timerange'
+      # puts "Day #{datetime.day} == #{@ord.inspect} >> #{datetime.day.value_in?(@ord)}"
+      return false unless datetime.day.value_in?(@ord)
+    end
+    return true
+  end
+
+  def occurrances_on_day(date)
+    occurs_on_day?(date) ? [] : [{:start_time => start_time(date), :end_time => end_time(date)}]
+  end
+
+  def start_time(date=nil)
+    if date
+      Time.parse("#{date.strftime("%Y-%m-%d")} #{@start_time}#{start_pm? ? 'pm' : 'am'}")
+    else
+      @start_time
+    end
+  end
+  def end_time(date=nil)
+    if date
+      Time.parse("#{date.strftime("%Y-%m-%d")} #{@end_time}")
+    else
+      @end_time
+    end
+  end
+
+  class Union
+    def set
+      @set ||= []
+    end
+
+    def initialize(*args)
+      # @set = args.select {|e| e.is_a?(TimePoint) || e.is_a?(Range)}
+      @set = args.select {|e| e.is_a?(TimePoint)}
+      # @set = args
+    end
+
+    def include?(other)
+      set.any? {|tp| tp.include?(other)}
+    end
+
+    def occurs_on_day?(other)
+      set.any? {|tp| tp.occurs_on_day?(other)}
+    end
+
+    def occurrances_on_day(other)
+      set.inject([]) {|a,tp| a.concat(tp.occurrances_on_day(other)); a}
+    end
+
+    def eql?(other)
+      if other.is_a?(TimePoint::Union)
+        set.length == other.length && set.length.times { |i| return false unless set[i].eql? other[i] }
+      else
+        # what else can we compare to?
+        raise "Comparison of TimePointSet with something different (#{other.class.name})."
+      end
+    end
+
+    private
+    # Sends all other methods to the set array.
+    def method_missing(name, *args, &block)
+      if set.respond_to?(name)
+        args << block if block_given?
+        set.send(name, *args)
+      else
+        super
+      end
     end
   end
 end
