@@ -1,6 +1,6 @@
 # time_point #
 
-* http://github.com/dcparker/time_point
+* [http://github.com/dcparker/time_point]
 
 ## DESCRIPTION ##
 
