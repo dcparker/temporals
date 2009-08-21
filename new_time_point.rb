@@ -124,10 +124,12 @@ class TimePoint
     'wday union wday',
     'month ord',
     'ord wday',
+    'ord month timerange',
     'month_ord timerange',
     'month union month',
     'month range month',
     'ord_wday month',
+    'ord_wday timerange',
     'ord_wday_month timerange'
   ]
   CommonPatternActions = {
@@ -157,6 +159,13 @@ class TimePoint
       words[i][:wday] = words[i+1][:wday]
       words.slice!(i+1,1)
     },
+    'ord month timerange' => lambda {|words,i|
+      words[i][:type] = 'month_ord_timerange'
+      words[i][:month] = words[i+1][:month]
+      words[i][:start_time] = words[i+2][:start_time]
+      words[i][:end_time] = words[i+2][:end_time]
+      words.slice!(i+1,2)
+    },
     'month_ord timerange' => lambda {|words,i|
       words[i][:type] = 'month_ord_timerange'
       words[i][:start_time] = words[i+1][:start_time]
@@ -168,11 +177,17 @@ class TimePoint
       words.slice!(i+1,2)
     },
     'month range month' => lambda {|words,i|
-      
+      raise "Not Implemented Yet!"
     },
     'ord_wday month' => lambda {|words,i|
       words[i][:type] = 'ord_wday_month'
       words[i][:month] = words[i+1][:month]
+      words.slice!(i+1,1)
+    },
+    'ord_wday timerange' => lambda {|words,i|
+      words[i][:type] = 'ord_wday_timerange'
+      words[i][:start_time] = words[i+1][:start_time]
+      words[i][:end_time] = words[i+1][:end_time]
       words.slice!(i+1,1)
     },
     'ord_wday_month timerange' => lambda {|words,i|
@@ -191,7 +206,7 @@ class TimePoint
     'union' => lambda {|words,i|
       words[i-1] = TimePoint::Union.new(words[i-1], words[i+1])
       words.slice!(i,2)
-      # puts words.inspect
+      puts words.inspect if $DEBUG
     }
   }
 
@@ -215,7 +230,7 @@ class TimePoint
 
       # 2. Analyze the expression
       words = expression.split(/\s+/)
-      # puts words.inspect
+      puts words.inspect if $DEBUG
       analyzed_expression = words.inject([]) do |a,word|
         a << case word
         when WordTypes[:ord]
@@ -239,17 +254,24 @@ class TimePoint
       end
 
       # 3. Combine common patterns
-      # puts analyzed_expression.inspect
-      # puts analyzed_expression.collect_types.inspect
+      puts analyzed_expression.inspect if $DEBUG
+      puts analyzed_expression.collect_types.inspect if $DEBUG
 
-      CommonPatterns.each do |pattern|
-        while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
-          CommonPatternActions[pattern].call(analyzed_expression,i)
+      something_was_modified = true
+      while something_was_modified
+        something_was_modified = false
+        before_length = analyzed_expression.length
+        CommonPatterns.each do |pattern|
+          while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
+            CommonPatternActions[pattern].call(analyzed_expression,i)
+          end
         end
+        after_length = analyzed_expression.length
+        something_was_modified = true if before_length != after_length
       end
       
-      # puts analyzed_expression.inspect
-      # puts analyzed_expression.collect_types.inspect
+      puts analyzed_expression.inspect if $DEBUG
+      puts analyzed_expression.collect_types.inspect if $DEBUG
 
       # What remains should be simply sections of boolean logic
       # 4. Parse boolean logic
@@ -292,32 +314,43 @@ class TimePoint
       test_date = datetime.strftime("%Y-%m-%d")
       test_start_time = Time.parse("#{test_date} #{@start_time}#{start_pm? ? 'pm' : 'am'}")
       test_end_time = Time.parse("#{test_date} #{@end_time}")
-      # puts "TimeRange: date:#{test_date} test_start:#{test_start_time} test_end:#{test_end_time} <=> #{datetime}"
+      puts "TimeRange: date:#{test_date} test_start:#{test_start_time} test_end:#{test_end_time} <=> #{datetime}" if $DEBUG
       return false unless datetime.between?(test_start_time, test_end_time)
     end
     return true
+    puts "#{datetime} Included!" if $DEBUG
   end
 
   def occurs_on_day?(datetime)
-    # puts "#{datetime} IN? #{inspect}"
-    # puts "Correct month? #{Month.order[datetime.month-1].inspect}==#{@month.inspect} : #{Month.order[datetime.month-1].value_in?(@month)}" if @type =~ /month/
+    puts "#{datetime} IN? #{inspect}" if $DEBUG
+    puts "Correct month? #{Month.order[datetime.month-1].inspect}==#{@month.inspect} : #{Month.order[datetime.month-1].value_in?(@month)}" if @type =~ /month/ if $DEBUG
     return false if @type =~ /month/ && !Month.order[datetime.month-1].value_in?(@month)
-    # puts "Type: #{@type}"
-    case
-    when @type == 'ord_wday_month_timerange'
-      # puts "Weekday: #{WDay.order[datetime.wday].inspect} in? #{@wday.inspect} == #{WDay.order[datetime.wday].value_in?(@wday)}"
+    if @type =~ /ord_wday/
+      puts "Weekday: #{WDay.order[datetime.wday].inspect} in? #{@wday.inspect} == #{WDay.order[datetime.wday].value_in?(@wday)}" if $DEBUG
       return false unless WDay.order[datetime.wday].value_in?(@wday)
-      # puts "WeekdayOrd: #{datetime.wday_ord} in? #{@ord.inspect} == #{datetime.wday_ord.value_in?(@ord)}"
+      puts "WeekdayOrd: #{datetime.wday_ord} in? #{@ord.inspect} == #{datetime.wday_ord.value_in?(@ord)}" if $DEBUG
       return false unless datetime.wday_ord.value_in?(@ord)
-    when @type == 'month_ord_timerange'
-      # puts "Day #{datetime.day} == #{@ord.inspect} >> #{datetime.day.value_in?(@ord)}"
+    end
+    if @type =~ /month_ord/
+      puts "Day #{datetime.day} == #{@ord.inspect} >> #{datetime.day.value_in?(@ord)}" if $DEBUG
       return false unless datetime.day.value_in?(@ord)
     end
+    # puts "Type: #{@type}" if $DEBUG
+    # case
+    # when @type == 'ord_wday_month'
+    #   return true
+    # when @type == 'ord_wday_month_timerange'
+    #   return true
+    # when @type == 'ord_wday_timerange'
+    #   return true
+    # when @type == 'month_ord_timerange'
+    # end
+    puts "Occurs on #{datetime}!" if $DEBUG
     return true
   end
 
   def occurrances_on_day(date)
-    occurs_on_day?(date) ? [] : [{:start_time => start_time(date), :end_time => end_time(date)}]
+    occurs_on_day?(date) ? [{:start_time => start_time(date), :end_time => end_time(date)}] : []
   end
 
   def start_time(date=nil)
