@@ -28,10 +28,10 @@ Single-point expressions:
 	t6 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009") # default duration of ONE of the most specific piece mentioned: 2-3pm every friday in January of '09, and also all day every thursday all year in 2009
 
 From that most complex one above, see how TimePoint#include? works:
-  t6.include?(Time.parse('2009-02-05 19:00:00')) => true
-  t6.include?(Time.parse('2009-01-09 2:31pm')) => true
-  t6.include?(Time.parse('February 5, 2010')) => false
-  t6.include?(Time.parse('January 16, 2007')) => false
+	t6.include?(Time.parse('2009-02-05 19:00:00')) => true
+	t6.include?(Time.parse('2009-01-09 2:31pm')) => true
+	t6.include?(Time.parse('February 5, 2010')) => false
+	t6.include?(Time.parse('January 16, 2007')) => false
 
 ## REQUIREMENTS ##
 
