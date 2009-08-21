@@ -4,7 +4,7 @@
 
 ## DESCRIPTION ##
 
-An attempt at a Ruby implementation of Martin Fowler's TimePoint pattern (http://martinfowler.com/ap2/timePoint.html). It is most certainly lacking some areas (ex. timezone support), but its algorithm for parsing the natural language for recurring time-points is quite powerful.
+An attempt at a Ruby implementation of Martin Fowler's TimePoint pattern ([http://martinfowler.com/ap2/timePoint.html]). It is most certainly lacking some areas (ex. timezone support), but its algorithm for parsing the natural language for recurring time-points is quite powerful.
 
 ## PROBLEMS ##
 
