@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'spec'
-require File.dirname(__FILE__) + '../lib/time_point'
+require File.dirname(__FILE__) + '/../lib/time_point'
 
 describe TimePoint do
   it "1st-2nd And 4th Thursdays Of March And April 5-6:30pm And March 16th - 24th At 2-2:30pm" do
@@ -39,5 +39,19 @@ describe TimePoint do
     t.occurrances_on_day(Time.parse('2009-04-01')).length.should eql(1)
     t.occurrances_on_day(Time.parse('2009-04-02')).length.should eql(2)
     t.occurrances_on_day(Time.parse('2009-05-07')).length.should eql(1)
+  end
+
+  it "2pm Tuesdays" do
+    t = TimePoint.parse("2pm Tuesdays")
+    t.occurs_on_day?(Time.parse('2009-04-28')).should eql(true)
+    t.include?(Time.parse('2009-04-21 14:52')).should eql(true)
+  end
+
+  it "2:30pm Tuesdays" do
+    t = TimePoint.parse("2:30pm Tuesdays")
+    t.occurs_on_day?(Time.parse('2009-04-28')).should eql(true)
+    t.include?(Time.parse('2009-04-21 14:30')).should eql(true)
+    t.include?(Time.parse('2009-04-21 14:31')).should eql(false)
+    t.include?(Time.parse('2009-04-21 14:30:59')).should eql(true)
   end
 end

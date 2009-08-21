@@ -117,6 +117,16 @@ class TimePoint
     }
   end
 
+  TimeRegexp = '\d{1,2}(?::\d{1,2})?(?:am|pm)'
+  WordTypes = {
+    :ord => /^(\d+)(?:st|nd|rd|th)?$/i,
+    :wday => /^(#{WDay.order.join('|')})s$/i,
+    :month => /^#{Month.order.join('|')}$/i,
+    :union => /^(?:and)$/i,
+    :range => /^(?:-|to|through)$/,
+    :timerange => /^(#{TimeRegexp}?)-(#{TimeRegexp})$/i
+  }
+
   # These are in a specific order
   CommonPatterns = [
     'ord range ord',
@@ -191,6 +201,11 @@ class TimePoint
       words[i][:end_time] = words[i+1][:end_time]
       words.slice!(i+1,1)
     },
+    'timerange wday' => lambda {|words,i|
+      words[i][:type] = 'wday_timerange'
+      words[:wday] = words[i+1][:wday]
+      words.slice!(i+1,1)
+    },
     'ord_wday_month timerange' => lambda {|words,i|
       words[i][:type] = 'ord_wday_month_timerange'
       words[i][:start_time] = words[i+1][:start_time]
@@ -211,23 +226,29 @@ class TimePoint
     }
   }
 
-  TimeRegexp = '\d{1,2}(?::\d{1,2})?(?:am|pm)'
-  WordTypes = {
-    :ord => /^(\d+)(?:st|nd|rd|th)?$/i,
-    :wday => /^(#{WDay.order.join('|')})s$/i,
-    :month => /^#{Month.order.join('|')}$/i,
-    :union => /^(?:and)$/i,
-    :range => /^(?:-|to|through)$/,
-    :timerange => /^(#{TimeRegexp}?)-(#{TimeRegexp})$/i,
-    :time => /^#{TimeRegexp}$/i
-  }
-  
   class << self
     def parse(expression)
+      puts "Parsing expression: #{expression.inspect}" if $DEBUG
       # 1. Normalize the expression
       # TODO: re-create normalize: ' -&| ', 'time-time'
-      expression.gsub!(/([\-\&\|])/,' \1 ')
-      expression.gsub!(/(#{TimeRegexp}?)\s+-\s+(#{TimeRegexp})/,'\1-\2')
+      expression.gsub!(/\s+/,' ').gsub!(/([\-\&\|])/,' \1 ')
+      expression.gsub!(/(#{TimeRegexp}?) +- +(#{TimeRegexp})/,'\1-\2')
+      expression.gsub!(/(^| )(#{TimeRegexp})( |$)/i) {|s|
+        # Converting a floating time into a timerange that spans the appropriate duration
+        b = $1
+        time = $2
+        a = $3
+        puts "Converting Time to TimeRange: #{time}" if $DEBUG
+        # Figure out what precision we're at
+        newtime = time + '-'
+        if time =~ /(\d+):(\d+)(am|pm|$)/
+          newtime += time
+        elsif time =~ /(\d+)(am|pm|$)/
+          newtime += "#{$1}:59#{$2}"
+        end
+        puts "Converted! #{newtime}" if $DEBUG
+        b+newtime+a
+      }
 
       # 2. Analyze the expression
       words = expression.split(/\s+/)
@@ -246,8 +267,6 @@ class TimePoint
           {:type => 'range'}
         when WordTypes[:timerange]
           {:type => 'timerange', :start_time => $1, :end_time => $2}
-        when WordTypes[:time]
-          {:type => 'time', :time => word}
         end
       end.compact
       def analyzed_expression.collect_types
@@ -313,8 +332,9 @@ class TimePoint
     return false unless occurs_on_day?(datetime)
     if @type =~ /timerange/
       test_date = datetime.strftime("%Y-%m-%d")
-      test_start_time = Time.parse("#{test_date} #{@start_time}#{start_pm? ? 'pm' : 'am'}")
+      test_start_time = Time.parse("#{test_date} #{@start_time.gsub(/(am|pm)$/,'')}#{start_pm? ? 'pm' : 'am'}")
       test_end_time = Time.parse("#{test_date} #{@end_time}")
+      test_end_time = test_end_time+59 if test_end_time == test_start_time # If they're equal, they are assumed to be to the minute precision
       puts "TimeRange: date:#{test_date} test_start:#{test_start_time} test_end:#{test_end_time} <=> #{datetime}" if $DEBUG
       return false unless datetime.between?(test_start_time, test_end_time)
     end

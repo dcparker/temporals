@@ -46,7 +46,6 @@ More methods available (referencing some of the above examples):
 
 ## Problems ##
 
-* Does not yet assume an end-time for a time-range when an end-time is not given. This is necessary so that '2pm Fridays' really means '2-3pm Fridays', and '2:30pm Fridays' really means '2:30-2:31pm Fridays'.
 * Not yet able to compare two TimePoints.
 * Not yet able to serialize a parsed TimePoint back into text.
 * Does not yet understand words that reference from today's date, like "Today", "Tomorrow", "Next Week".
