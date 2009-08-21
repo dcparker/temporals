@@ -13,16 +13,28 @@ TimePoint works to follow the true spirit of the TimePoint pattern -- the idea t
 The main usage of TimePoint, as it currently has been built for, is TimePoint.parse and TimePoint#include?. Here are several examples:
 
 Example Expressions:
-	t1 = TimePoint.parse('Tuesday') # All day Tuesday, every week
-	t2 = TimePoint.parse("February 24th") # Every Feb 24, all day long
-	t3 = TimePoint.parse("24 February 2001") # Feb 24 in 2001, all day long
-	t4 = TimePoint.parse("9 January 2009 and Thursday 2009") # every Thursday in 2009, and the 9th of January 2009 too
-	t5 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2-3:30pm") # first thursday of every month,
-	      # forever, from 4 to 5 pm; also 2 to 3:30 pm on the 1st, 2nd, 3rd, and 4th of March (every year!)
-	t6 = TimePoint.parse("1st-2nd and 4th Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")
-	      # you can figure this one out for yourself... Then figure out how the parsing knows exactly what this means! :P
-	t7 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009") # default duration of ONE of the most
-	      # specific piece mentioned: 2-3pm every friday in January of '09, and also all day every thursday all year in 2009
+	# All day Tuesday, every week
+	  t1 = TimePoint.parse('Tuesday')
+	
+	# Every Feb 24, all day long
+	  t2 = TimePoint.parse("February 24th")
+	
+	# Feb 24 in 2001, all day long
+	  t3 = TimePoint.parse("24 February 2001")
+	
+	# every Thursday in 2009, and the 9th of January 2009 too
+	  t4 = TimePoint.parse("9 January 2009 and Thursday 2009")
+	
+	# first thursday of every month, forever, from 4 to 5 pm;
+	# also 2 to 3:30 pm on the 1st, 2nd, 3rd, and 4th of March (every year!)
+	  t5 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2-3:30pm")
+	
+	# you can figure this one out for yourself... Then figure out how the parsing knows exactly what this means! :P
+	  t6 = TimePoint.parse("1st-2nd and 4th Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")
+	
+	# default duration of ONE of the most specific piece mentioned: 2-3pm every
+	# friday in January of '09, and also all day every thursday all year in 2009
+	  t7 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
 
 From that last one above, see how TimePoint#include? works:
 	t7.include?(Time.parse('2009-02-05 19:00:00')) => true
