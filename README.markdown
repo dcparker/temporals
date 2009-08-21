@@ -36,7 +36,9 @@ Example Expressions:
 	# friday in January of '09, and also all day every thursday all year in 2009
 	  t7 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
 
-From that last one above, see how TimePoint#include? works:
+More methods available (referencing some of the above examples):
+	t6.occurs_on_day?(Time.parse('2009-03-05')) => true
+	t5.occurrances_on_day(Time.parse('2009-04-02')) => [{:start_time=>Thu Apr 02 16:00:00 2009, :end_time=>Thu Apr 02 17:00:00 2009}, {:start_time=>Thu Apr 02 14:00:00 2009, :end_time=>Thu Apr 02 15:30:00 2009}]
 	t7.include?(Time.parse('2009-02-05 19:00:00')) => true
 	t7.include?(Time.parse('2009-01-09 2:31pm')) => true
 	t7.include?(Time.parse('February 5, 2010')) => false
@@ -44,10 +46,10 @@ From that last one above, see how TimePoint#include? works:
 
 ## Problems ##
 
-* Does not yet understand words that reference from today's date, like "Today", "Tomorrow", "Next Week".
 * Does not yet assume an end-time for a time-range when an end-time is not given. This is necessary so that '2pm Fridays' really means '2-3pm Fridays', and '2:30pm Fridays' really means '2:30-2:31pm Fridays'.
 * Not yet able to compare two TimePoints.
 * Not yet able to serialize a parsed TimePoint back into text.
+* Does not yet understand words that reference from today's date, like "Today", "Tomorrow", "Next Week".
 
 ## Requirements ##
 
