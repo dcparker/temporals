@@ -25,24 +25,24 @@ Example Expressions:
 	# every Thursday in 2009, and the 9th of January 2009 too
 	  t4 = TimePoint.parse("9 January 2009 and Thursday 2009")
 	
-	# first thursday of every month, forever, from 4 to 5 pm;
-	# also 2 to 3:30 pm on the 1st, 2nd, 3rd, and 4th of March (every year!)
-	  t5 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2-3:30pm")
-	
-	# you can figure this one out for yourself... Then figure out how the parsing knows exactly what this means! :P
-	  t6 = TimePoint.parse("1st-2nd and 4th Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")
-	
 	# default duration of ONE of the most specific piece mentioned: 2-3pm every
 	# friday in January of '09, and also all day every thursday all year in 2009
-	  t7 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
+	  t5 = TimePoint.parse("2pm Fridays in January 2009 and Thursdays in 2009")
 
+	# first thursday of every month, forever, from 4 to 5 pm;
+	# also 2 to 3:30 pm on the 1st, 2nd, 3rd, and 4th of March (every year!)
+	  t6 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2-3:30pm")
+	
+	# you can figure this one out for yourself... Then figure out how the parsing knows exactly what this means! :P
+	  t7 = TimePoint.parse("1st-2nd and 4th Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")
+	
 More methods available (referencing some of the above examples):
-	t6.occurs_on_day?(Time.parse('2009-03-05')) => true
-	t5.occurrances_on_day(Time.parse('2009-04-02')) => [{:start_time=>Thu Apr 02 16:00:00 2009, :end_time=>Thu Apr 02 17:00:00 2009}, {:start_time=>Thu Apr 02 14:00:00 2009, :end_time=>Thu Apr 02 15:30:00 2009}]
-	t7.include?(Time.parse('2009-02-05 19:00:00')) => true
-	t7.include?(Time.parse('2009-01-09 2:31pm')) => true
-	t7.include?(Time.parse('February 5, 2010')) => false
-	t7.include?(Time.parse('January 16, 2007')) => false
+	t5.include?(Time.parse('2009-02-05 19:00:00')) => true
+	t5.include?(Time.parse('2009-01-09 2:31pm')) => true
+	t5.include?(Time.parse('February 5, 2010')) => false
+	t5.include?(Time.parse('January 16, 2007')) => false
+	t6.occurrances_on_day(Time.parse('2009-04-02')) => [{:start_time=>Thu Apr 02 16:00:00 2009, :end_time=>Thu Apr 02 17:00:00 2009}, {:start_time=>Thu Apr 02 14:00:00 2009, :end_time=>Thu Apr 02 15:30:00 2009}]
+	t7.occurs_on_day?(Time.parse('2009-03-05')) => true
 
 ## Problems ##
 
