@@ -2,18 +2,11 @@
 
 * [http://github.com/dcparker/time_point](http://github.com/dcparker/time_point)
 
-## DESCRIPTION ##
+## Description ##
 
 An attempt at a Ruby implementation of [Martin Fowler's TimePoint pattern](http://martinfowler.com/ap2/timePoint.html). It is most certainly lacking some areas (ex. timezone support), but its algorithm for parsing the natural language for recurring time-points is quite powerful.
 
-## PROBLEMS ##
-
-* Does not yet understand words that reference from today's date, like "Today", "Tomorrow", "Next Week".
-* Does not yet assume an end-time for a time-range when an end-time is not given. This is necessary so that '2pm Fridays' really means '2-3pm Fridays', and '2:30pm Fridays' really means '2:30-2:31pm Fridays'.
-* Not yet able to compare two TimePoints.
-* Not yet able to serialize a parsed TimePoint back into text.
-
-## SYNOPSIS ##
+## Synopsis ##
 
 TimePoint works to follow the true spirit of the TimePoint pattern -- the idea that every expression of time in fact has a certain level of precision intended. For example, if I say "March 5, 2000", I simply mean any time within that day -- all day. However, if I say "2:05pm March 5, 2000", I mean any second within that very specific minute. But if I say "2:00pm Fridays" I really mean every Friday, and that expression is precise to the day-of-week and to the hour and minute, but the second, week, month, or year don't matter.
 
@@ -33,15 +26,22 @@ From that last one above, see how TimePoint#include? works:
 	t6.include?(Time.parse('February 5, 2010')) => false
 	t6.include?(Time.parse('January 16, 2007')) => false
 
-## REQUIREMENTS ##
+## Problems ##
+
+* Does not yet understand words that reference from today's date, like "Today", "Tomorrow", "Next Week".
+* Does not yet assume an end-time for a time-range when an end-time is not given. This is necessary so that '2pm Fridays' really means '2-3pm Fridays', and '2:30pm Fridays' really means '2:30-2:31pm Fridays'.
+* Not yet able to compare two TimePoints.
+* Not yet able to serialize a parsed TimePoint back into text.
+
+## Requirements ##
 
 * Just Ruby!
 
-## INSTALL ##
+## Install ##
 
 * [sudo] gem install time_point
 
-## LICENSE ##
+## License ##
 
 (The MIT License)
 
