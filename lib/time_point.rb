@@ -117,7 +117,7 @@ class TimePoint
     }
   end
 
-  TimeRegexp = '\d{1,2}(?::\d{1,2})?(?:am|pm)'
+  TimeRegexp = '\d{1,2}(?::\d\d)?(?::\d{1,2})?(?:[ap]m)'
   WordTypes = {
     :ord => /^(\d+)(?:st|nd|rd|th)?$/i,
     :wday => /^(#{WDay.order.join('|')})s$/i,
@@ -241,10 +241,10 @@ class TimePoint
         puts "Converting Time to TimeRange: #{time}" if $DEBUG
         # Figure out what precision we're at
         newtime = time + '-'
-        if time =~ /(\d+):(\d+)(am|pm|$)/
-          newtime += time
-        elsif time =~ /(\d+)(am|pm|$)/
-          newtime += "#{$1}:59#{$2}"
+        if time =~ /(\d+):(\d+)([ap]m|$)/
+          newtime += "#{$1}:#{$2}:59#{$3}" # end-time is 59 seconds later
+        elsif time =~ /(\d+)([ap]m|$)/
+          newtime += "#{$1}:59:59#{$2}" # end-time is 59 minutes + 59 seconds later
         end
         puts "Converted! #{newtime}" if $DEBUG
         b+newtime+a
@@ -321,7 +321,7 @@ class TimePoint
   end
 
   def start_pm?
-    if @start_time =~ /(am|pm)$/ || @end_time =~ /(am|pm)$/
+    if @start_time =~ /([ap]m)$/ || @end_time =~ /([ap]m)$/
       $1 == 'pm'
     else
       nil
@@ -332,7 +332,7 @@ class TimePoint
     return false unless occurs_on_day?(datetime)
     if @type =~ /timerange/
       test_date = datetime.strftime("%Y-%m-%d")
-      test_start_time = Time.parse("#{test_date} #{@start_time.gsub(/(am|pm)$/,'')}#{start_pm? ? 'pm' : 'am'}")
+      test_start_time = Time.parse("#{test_date} #{@start_time.gsub(/([ap]m)$/,'')}#{start_pm? ? 'pm' : 'am'}")
       test_end_time = Time.parse("#{test_date} #{@end_time}")
       test_end_time = test_end_time+59 if test_end_time == test_start_time # If they're equal, they are assumed to be to the minute precision
       puts "TimeRange: date:#{test_date} test_start:#{test_start_time} test_end:#{test_end_time} <=> #{datetime}" if $DEBUG
@@ -376,7 +376,7 @@ class TimePoint
 
   def start_time(date=nil)
     if date
-      Time.parse("#{date.strftime("%Y-%m-%d")} #{@start_time}#{start_pm? ? 'pm' : 'am'}")
+      Time.parse("#{date.strftime("%Y-%m-%d")} #{@start_time.gsub(/[ap]m/,'')}#{start_pm? ? 'pm' : 'am'}")
     else
       @start_time
     end
@@ -387,6 +387,27 @@ class TimePoint
     else
       @end_time
     end
+  end
+
+  def to_natural
+    @type.split(/_/).collect {|w|
+      case w
+      # when 'ord'
+      #   if @ord.respond_to?(:to_natural)
+      #     @ord.to_natural('ord')
+      #   end
+      #   if @ord.is_a?(Range)
+      #     @ord.begin + 'th-' + @ord.end
+      #   elsif @ord.is_a?(Array)
+      #     
+      #   else
+      #     @ord + 'th'
+      #   end
+      when 'dummy'
+      else
+        instance_variable_get('@'+w)
+      end
+    }.join(' ')
   end
 
   class Union
@@ -419,6 +440,10 @@ class TimePoint
         # what else can we compare to?
         raise "Comparison of TimePointSet with something different (#{other.class.name})."
       end
+    end
+
+    def to_natural
+      set.inject([]) {|a,tp| a << tp.to_natural}.join(' and ')
     end
 
     private

@@ -31,7 +31,7 @@ Example Expressions:
 
 	# first thursday of every month, forever, from 4 to 5 pm;
 	# also 2 to 3:30 pm on the 1st, 2nd, 3rd, and 4th of March (every year!)
-	  t6 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2-3:30pm")
+	  t6 = TimePoint.parse("1st Thursdays at 4-5pm and 1st - 4th of March at 2pm")
 	
 	# you can figure this one out for yourself... Then figure out how the parsing knows exactly what this means! :P
 	  t7 = TimePoint.parse("1st-2nd and 4th Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")

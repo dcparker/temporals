@@ -5,12 +5,11 @@ require File.dirname(__FILE__) + '/../lib/time_point'
 describe TimePoint do
   it "1st-2nd And 4th Thursdays Of March And April 5-6:30pm And March 16th - 24th At 2-2:30pm" do
     t = TimePoint.parse("1st-2nd And 4th Thursdays Of March And April 5-6:30pm And March 16th - 24th At 2-2:30pm")
-    # march 5, 12, 26, april 2, 9, 23
     t.include?(Time.parse('2009-03-05 5:54pm')).should eql(true)
     t.include?(Time.parse('2009-03-05 18:24')).should eql(true)
     t.include?(Time.parse('2009-03-05 18:30')).should eql(true)
     t.include?(Time.parse('2009-03-05 18:31')).should eql(false)
-    # t.include?(Time.parse('2009-04-26 18:31')).should eql(false)
+    t.include?(Time.parse('2009-04-26 18:31')).should eql(false)
     t.occurs_on_day?(Time.parse('2009-03-04')).should_not eql(true)
     t.occurs_on_day?(Time.parse('2009-03-11')).should_not eql(true)
     t.occurs_on_day?(Time.parse('2009-03-25')).should_not eql(true)
@@ -44,14 +43,21 @@ describe TimePoint do
   it "2pm Tuesdays" do
     t = TimePoint.parse("2pm Tuesdays")
     t.occurs_on_day?(Time.parse('2009-04-28')).should eql(true)
+    t.occurrances_on_day(Time.parse('2009-04-28')).length.should eql(1)
+    t.occurrances_on_day(Time.parse('2009-04-28'))[0][:start_time].should eql(Time.parse('2009-04-28 2:00pm'))
+    t.occurrances_on_day(Time.parse('2009-04-28'))[0][:end_time].should eql(Time.parse('2009-04-28 2:59:59pm'))
     t.include?(Time.parse('2009-04-21 14:52')).should eql(true)
+    t.include?(Time.parse('2009-04-21 14:59:59')).should eql(true)
   end
 
   it "2:30pm Tuesdays" do
     t = TimePoint.parse("2:30pm Tuesdays")
     t.occurs_on_day?(Time.parse('2009-04-28')).should eql(true)
+    t.occurrances_on_day(Time.parse('2009-04-28')).length.should eql(1)
+    t.occurrances_on_day(Time.parse('2009-04-28'))[0][:start_time].should eql(Time.parse('2009-04-28 2:30pm'))
+    t.occurrances_on_day(Time.parse('2009-04-28'))[0][:end_time].should eql(Time.parse('2009-04-28 2:30:59pm'))
     t.include?(Time.parse('2009-04-21 14:30')).should eql(true)
-    t.include?(Time.parse('2009-04-21 14:31')).should eql(false)
     t.include?(Time.parse('2009-04-21 14:30:59')).should eql(true)
+    t.include?(Time.parse('2009-04-21 14:31')).should eql(false)
   end
 end
