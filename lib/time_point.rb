@@ -59,6 +59,7 @@ class Time
 end
 
 class TimePoint
+  VERSION = '1.0.0'
   class ArrayOfRanges < Array
     def self.new(*values)
       n = allocate
