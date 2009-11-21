@@ -1,3 +1,10 @@
+=== 2.0.0 / 2009-11-21
+
+* Moved gem to gemcutter.org
+* Added several examples and specs
+* Made them all work properly
+* The parsing engine is a bit smarter and more flexible
+
 === 1.0.0 / 2009-08-21
 
 * 1 major enhancement
