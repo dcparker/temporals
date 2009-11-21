@@ -52,7 +52,24 @@
       A uniquely powerful Ruby parser for Temporal Expressions. Type out your recurring time patterns in plain english, and the computer can understand it.
     </div>
 
-    <p>"We could develop some interpreter that would be able to parse and process a range of expressions that we might want to deal with. This would be quite flexible, but also pretty hard" (Martin Fowler, http://martinfowler.com/apsupp/recurring.pdf). Temporals is a Ruby parser for just that.</p><h2>Dependencies</h2>
+    <p>"We could develop some interpreter that would be able to parse and process a range of expressions that we might want to deal with. This would be quite flexible, but also pretty hard" (Martin Fowler, http://martinfowler.com/apsupp/recurring.pdf). Temporals is a Ruby parser for just that.</p>
+
+<h2>Examples</h2>
+<ul>
+  <li>"2-4pm every thursday"</li>
+  <li>"2:30-3p every mon and wed and 3-3:30 on friday"</li>
+  <li>"Thursdays in 2009 and 9 January 2009"</li>
+  <li>"Third Wednesday and Thursday Aug at 3pm"</li>
+  <li>"2pm Fridays in January 2009 and Thursdays in 2009"</li>
+  <li>"1st Thursdays at 4-5pm and First - Fourth of March at 2-3:30pm"</li>
+  <li>"1st-2nd and last Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm"</li>
+  <li>...and probably more that you are going to waste your time thinking of.</li>
+</ul>
+<p>Temporals is NOT GUARANTEED to parse anything you give it. It has a limited, though rather large and flexible, vocabulary.
+If you come across something that doesn't parse properly, please write a spec test for it and send it to me: gems@behindlogic.com.</p>
+
+
+<h2>Dependencies</h2>
 <p>Just Ruby!</p>
 <h2>Install</h2>
 <p>gem install temporals -s http://gemcutter.org</p>
