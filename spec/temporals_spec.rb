@@ -3,6 +3,12 @@ require 'spec'
 require File.dirname(__FILE__) + '/../lib/temporals'
 
 describe Temporal do
+  it "Thursday" do
+    t = Temporal.parse('Thursday')
+    t.should_not be_nil
+    t.to_natural.should eql('Thursday')
+  end
+  
   it "1st-2nd and last Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm" do
     t = Temporal.parse("1st-2nd and last Thursdays of March and April 5-6:30pm and March 16th - 24th at 2-2:30pm")
     t.include?(Time.parse('2009-03-05 17:54')).should eql(true)
