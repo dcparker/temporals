@@ -106,4 +106,13 @@ describe Temporal do
     t.include?(Time.parse('2009-01-09 2:14pm')).should eql(true)
     t.include?(Time.parse('2009-01-09 3:14pm')).should eql(false)
   end
+  
+  describe "parse" do
+    it "should not modify the string passed in" do
+      s = "2pm Tuesdays"
+      Temporal.parse(s)
+      s.should == "2pm Tuesdays"
+    end
+  end
+  
 end
