@@ -22,7 +22,8 @@ class Temporal
     private
       def normalize_expression(expression)
         # TODO: re-create normalize: ' -&| ', 'time-time'
-        expression.gsub!(/\s+/,' ').gsub!(/([\-\&\|])/,' \1 ')
+        expression.gsub!(/\s+/,' ')
+        expression.gsub!(/([\-\&\|])/,' \1 ')
         expression.gsub!(/(#{TimeRegexp}?) +- +(#{TimeRegexp})/,'\1-\2')
         expression.gsub!(/in ([09]\d|\d{4})/) {|s|
           y = $1
