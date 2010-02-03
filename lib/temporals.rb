@@ -114,3 +114,5 @@ class Temporal
     }.join(' ')
   end
 end
+
+Temporals = Temporal
