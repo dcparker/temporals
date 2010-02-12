@@ -44,14 +44,14 @@ class Temporal
   def occurs_on_day?(datetime)
     puts "#{datetime} IN? #{inspect}" if $DEBUG
     if @type =~ /month/
-      puts "Month #{Month.order[datetime.month-1].inspect} == #{@month.inspect} >> #{Month.order[datetime.month-1].value_in?(@month)}" if $DEBUG
-      return false unless Month.order[datetime.month-1].value_in?(@month)
+      puts "Month #{Month.new(datetime.month-1).inspect} in? #{@month.inspect} >> #{Month.new(datetime.month-1).value_in?(@month)}" if $DEBUG
+      return false unless Month.new(datetime.month-1).value_in?(@month)
     end
     if @type =~ /ord_wday/
-      puts "Weekday: #{WDay.order[datetime.wday].inspect} in? #{@wday.inspect} == #{WDay.order[datetime.wday].value_in?(@wday)}" if $DEBUG
-      return false unless WDay.order[datetime.wday].value_in?(@wday)
-      puts "WeekdayOrd: #{datetime.wday_ord} in? #{@ord.inspect} == #{datetime.wday_ord.value_in?(@ord)}" if $DEBUG
-      puts "WeekdayLast: #{datetime.wday_last} in? #{@ord.inspect} == #{datetime.wday_last.value_in?(@ord)}" if $DEBUG
+      puts "Weekday: #{WDay.new(datetime.wday).inspect} in? #{@wday.inspect} >> #{WDay.new(datetime.wday).value_in?(@wday)}" if $DEBUG
+      return false unless WDay.new(datetime.wday).value_in?(@wday)
+      puts "WeekdayOrd: #{datetime.wday_ord} in? #{@ord.inspect} >> #{datetime.wday_ord.value_in?(@ord)}" if $DEBUG
+      puts "WeekdayLast: #{datetime.wday_last} in? #{@ord.inspect} >> #{datetime.wday_last.value_in?(@ord)}" if $DEBUG
       return false unless datetime.wday_ord.value_in?(@ord) || datetime.wday_last.value_in?(@ord)
     end
     if @type =~ /month_ord/
@@ -63,8 +63,8 @@ class Temporal
       return false unless datetime.year.value_in?(@year)
     end
     if @type =~ /wday/
-      puts "Weekday: #{WDay.order[datetime.wday].inspect} in? #{@wday.inspect} == #{WDay.order[datetime.wday].value_in?(@wday)}" if $DEBUG
-      return false unless WDay.order[datetime.wday].value_in?(@wday)
+      puts "Weekday: #{WDay.new(datetime.wday).inspect} in? #{@wday.inspect} == #{WDay.new(datetime.wday).value_in?(@wday)}" if $DEBUG
+      return false unless WDay.new(datetime.wday).value_in?(@wday)
     end
     puts "Occurs on #{datetime}!" if $DEBUG
     return true

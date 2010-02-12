@@ -96,7 +96,9 @@ class Temporal
       words.slice!(i+1,2)
     },
     'month range month' => lambda {|words,i|
-      raise "Not Implemented Yet!"
+      # raise "Not Implemented Yet!"
+      words[i][:month] = (words[i][:month]..words[i+2][:month])
+      words.slice!(i+1,2)
     },
     'ord_wday month' => lambda {|words,i|
       words[i][:type] = 'ord_wday_month'

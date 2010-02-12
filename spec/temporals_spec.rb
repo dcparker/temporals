@@ -2,6 +2,14 @@ require 'rubygems'
 require 'spec'
 require File.dirname(__FILE__) + '/../lib/temporals'
 
+describe Temporal::Parser do
+  it "should not modify the string passed in" do
+    s = "2pm Tuesdays"
+    Temporal.parse(s)
+    s.should == "2pm Tuesdays"
+  end
+end
+
 describe Temporal do
   it "Thursday" do
     t = Temporal.parse('Thursday')
@@ -54,7 +62,7 @@ describe Temporal do
       #  (1st Thursdays at 4-5pm) and ((First - Fourth of March and April) at 2-3:30pm)
       #  (1st Thursdays at 4-5pm) and (First - Fourth of March) and (April at 2-3:30pm)
       Temporal.parse("1st Thursdays at 4-5pm and First - Fourth of March and April at 2-3:30pm")
-    }.should raise_error(RuntimeError, "Could not parse Temporal Expression: check to make sure it is clear and has only one possible meaning.")
+    }.should raise_error(RuntimeError, "Could not parse Temporal Expression: check to make sure it is clear and has only one possible meaning to an English-speaking person.")
   end
 
   it "2pm Tuesdays" do
@@ -107,12 +115,17 @@ describe Temporal do
     t.include?(Time.parse('2009-01-09 3:14pm')).should eql(false)
   end
   
-  describe "parse" do
-    it "should not modify the string passed in" do
-      s = "2pm Tuesdays"
-      Temporal.parse(s)
-      s.should == "2pm Tuesdays"
-    end
+  it "should parse '2009'" do
+    t = Temporal.parse("2009")
+    t.occurs_on_day?(Date.parse("January 15, 2009")).should eql(true)
+    t.include?(Time.parse('2009-01-09 2:14pm')).should eql(true)
+    t.include?(Time.parse('2009-01-09 3:14pm')).should eql(true)
+    t.occurs_on_day?(Date.parse("August 20, 2010")).should eql(false)
   end
-  
+
+  it "should parse '2-4pm Tuesdays and Thursdays, March through June'" do
+    t = Temporal.parse("2-4pm Tuesdays and Thursdays, March through June")
+    t.include?(Time.parse('2010-03-02 2:10pm')).should eql(true)
+    t.include?(Time.parse('2010-02-02 2:10pm')).should eql(false)
+  end
 end

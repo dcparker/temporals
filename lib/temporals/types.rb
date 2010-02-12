@@ -23,6 +23,22 @@ class Temporal
         order.include?(word) ? word : (translations.has_key?(word) ? translations[word] : nil)
       end
     end
+
+    attr_reader :name, :ord
+    alias :to_s :name
+    alias :inspect :to_s
+
+    def initialize(word)
+      @name = word.is_a?(String) ? self.class.normalize(word) : self.class.order[word]
+      @ord  = self.class.order.index(@name)
+    end
+
+    def <=>(other)
+      ord <=> other.ord
+    end
+    def ==(other)
+      ord == other.ord && name == other.name
+    end
   end
 
   class WDay < Classification

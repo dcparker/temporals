@@ -13,12 +13,13 @@ class Array
     any? do |iv|
       case iv
       when Range || Array
-        v.to_i.in?(iv)
+        v.in?(iv)
       else
         if iv.to_s =~ /^\d+$/ && v.to_s =~ /^\d+$/
           iv.to_i == v.to_i
         else
-          iv.to_s == v.to_s
+          puts "Comparing #{iv} with #{v}" if $DEBUG
+          iv == v
         end
       end
     end

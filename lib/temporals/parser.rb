@@ -1,35 +1,27 @@
 class Temporal
-  class << self
-    def parse(expression)
+  class Parser
+    def initialize(expression)
       # Make a copy of the passed in string, rather than mutate it
-      expression = expression.to_s.dup
-            
-      puts "Parsing expression: #{expression.inspect}" if $DEBUG
-      normalized_expression = normalize_expression(expression)
-      analyzed_expression = analyze_normalized_expression(normalized_expression)
-      combine_common_patterns!(analyzed_expression)
-      parse_boolean_logic!(analyzed_expression)
-
-      # This is how we know if the expression couldn't quite be figured out. 
-      # It should have been condensed down to a single Temporal or Temporal::Set
-      if analyzed_expression.length > 1
-        raise RuntimeError, "Could not parse Temporal Expression: check to make sure it is clear and has only one possible meaning."
-      else
-        analyzed_expression[0]
-      end
+      @expression = expression.to_s.dup
     end
-    
-    private
-      def normalize_expression(expression)
+
+    def normalized
+      @normalized || begin
+        normalized = @expression.dup
+        # 1. Normalize the expression
         # TODO: re-create normalize: ' -&| ', 'time-time'
-        expression.gsub!(/\s+/,' ')
-        expression.gsub!(/([\-\&\|])/,' \1 ')
-        expression.gsub!(/(#{TimeRegexp}?) +- +(#{TimeRegexp})/,'\1-\2')
-        expression.gsub!(/in ([09]\d|\d{4})/) {|s|
+        normalized.gsub!(/[\s+,]/,' ')
+        # Pad special characters with spaces for now
+        normalized.gsub!(/([\-\&\|])/,' \1 ')
+        # Get rid of spaces between time ranges
+        normalized.gsub!(/(#{TimeRegexp}?) +(?:-+|to) +(#{TimeRegexp})/,'\1-\2')
+        # Normalize to 4-digit years
+        normalized.gsub!(/in ([09]\d|\d{4})/) {|s|
           y = $1
           y.length == 2 ? (y =~ /^0/ ? '20'+y : '19'+y) : y
         }
-        expression.gsub!(/(^| )(#{TimeRegexp})( |$)/i) {|s|
+        # Normalize expressions of time
+        normalized.gsub!(/(^| )(#{TimeRegexp})( |$)/i) {|s|
           b = $1
           time = $2
           a = $3
@@ -58,14 +50,17 @@ class Temporal
             s
           end
         }
-        puts "Normalized expression: #{expression.inspect}" if $DEBUG
-        expression
+        puts "Normalized expression: #{normalized.inspect}" if $DEBUG
+        @normalized = normalized
       end
-      
-      def analyze_normalized_expression(normalized_expression)
-        words = normalize_expression(normalized_expression).split(/\s+/)
+    end
+
+    def tokenized
+      @tokenized || begin
+        # 2. Tokenize distinct pieces (words) in the expression
+        words = normalized.split(/\s+/)
         puts words.inspect if $DEBUG
-        analyzed_expression = words.inject([]) do |a,word|
+        tokenized = words.inject([]) do |a,word|
           a << case word
           when WordTypes[:ord]
             {:type => 'ord', :ord => $1}
@@ -74,11 +69,11 @@ class Temporal
             puts "WordOrd: #{ord}" if $DEBUG
             {:type => 'ord', :ord => ord}
           when WordTypes[:wday]
-            {:type => 'wday', :wday => WDay.normalize($1)}
+            {:type => 'wday', :wday => WDay.new($1)}
           when WordTypes[:year]
             {:type => 'year', :year => word}
           when WordTypes[:month]
-            {:type => 'month', :month => Month.normalize(word)}
+            {:type => 'month', :month => Month.new(word)}
           when WordTypes[:union]
             {:type => 'union'}
           when WordTypes[:range]
@@ -110,50 +105,71 @@ class Temporal
             {:type => 'timerange', :start_time => start_at, :end_time => end_at}
           end
         end.compact
-        def analyzed_expression.collect_types
-          collect {|e|
-            puts "E: #{e.inspect}" if $DEBUG
-            e[:type]
-            }
-        end
-        analyzed_expression
+        @tokenized = tokenized
       end
-      
-      def combine_common_patterns!(analyzed_expression)
-        puts analyzed_expression.inspect if $DEBUG
-        puts analyzed_expression.collect_types.inspect if $DEBUG
+    end
+
+    def language_patterns_combined
+      @language_patterns_combined || begin
+        language_patterns_combined = tokenized.dup
+
+        # 3. Combine common language patterns
+        puts language_patterns_combined.inspect if $DEBUG
+        puts language_patterns_combined.collect {|e| e[:type] }.inspect if $DEBUG
 
         something_was_modified = true
         while something_was_modified
           something_was_modified = false
-          before_length = analyzed_expression.length
+          before_length = language_patterns_combined.length
           CommonPatterns.each do |pattern|
-            while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
-              CommonPatternActions[pattern].call(analyzed_expression,i)
+            while i = language_patterns_combined.collect {|e| e[:type] }.includes_sequence?(pattern.split(/ /))
+              CommonPatternActions[pattern].call(language_patterns_combined,i)
             end
           end
-          after_length = analyzed_expression.length
+          after_length = language_patterns_combined.length
           something_was_modified = true if before_length != after_length
         end
-
-        puts analyzed_expression.inspect if $DEBUG
-        puts analyzed_expression.collect_types.inspect if $DEBUG
-        analyzed_expression
-      end
       
-      def parse_boolean_logic!(analyzed_expression)
-        analyzed_expression.each_index do |i|
-          analyzed_expression[i] = Temporal.new(analyzed_expression[i]) unless analyzed_expression[i][:type].in?('union', 'range')
+        puts language_patterns_combined.inspect if $DEBUG
+        puts language_patterns_combined.collect {|e| e[:type] }.inspect if $DEBUG
+      
+        @language_patterns_combined = language_patterns_combined
+      end
+    end
+
+    def yielded
+      # Binds it all together into a Set or a Union object
+      @yielded || begin
+
+        yielded = language_patterns_combined.dup
+
+        # What remains should be simply sections of Set logic
+        # 4. Parse Set logic
+        yielded.each_index do |i|
+          yielded[i] = Temporal.new(yielded[i]) unless yielded[i][:type].in?('union', 'range')
         end
 
         BooleanPatterns.each do |pattern|
-          while i = analyzed_expression.collect_types.includes_sequence?(pattern.split(/ /))
-            BooleanPatternActions[pattern].call(analyzed_expression,i)
-            break if analyzed_expression.length == 1
+          while i = yielded.collect {|e| e[:type] }.includes_sequence?(pattern.split(/ /))
+            BooleanPatternActions[pattern].call(yielded,i)
+            break if yielded.length == 1
           end
         end
-        
-        analyzed_expression
+
+        # This is how we know if the expression couldn't quite be figured out. It should have been condensed down to a single Temporal or Temporal::Set
+        if yielded.length > 1
+          raise RuntimeError, "Could not parse Temporal Expression: check to make sure it is clear and has only one possible meaning to an English-speaking person."
+        end
+
+        @yielded = yielded[0]
       end
+    end
+  end
+
+  class << self
+    def parse(expression)
+      puts "Parsing expression: #{expression.inspect}" if $DEBUG
+      Temporal::Parser.new(expression).yielded
+    end
   end
 end
