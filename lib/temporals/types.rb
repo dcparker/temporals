@@ -42,7 +42,7 @@ class Temporal
   end
 
   class WDay < Classification
-    @order = %w(Sunday Monday Tuesday Wednesday Thursday Friday)
+    @order = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
     @translations = {
       'S' => 'Sunday',
       'M' => 'Monday',
